@@ -79,7 +79,7 @@ Se comparan cuatro modelos contra un baseline exigente: **Seasonal Naïve**, que
 | Gradient Boosting | 14,02 % | 24,30 % |
 | Regresión lineal múltiple | 14,55 % | 19,63 % |
 
-MAPE: error porcentual medio de las predicciones (menor es mejor). Meses normales: meses sin eventos disruptivos, que son los que un modelo puede anticipar.
+MAPE: error porcentual absoluto medio de las predicciones (menor es mejor). Meses normales: meses sin eventos disruptivos, que son los que un modelo puede anticipar.
 
 Random Forest reduce ≈ 9,5 % el error del baseline en meses normales.
 
