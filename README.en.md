@@ -14,7 +14,7 @@
 
 TDI answers the questions a destination manager faces every day:
 
-- **How many visitors will come in the next 12 months?** A monthly forecast with a confidence interval.
+- **How many visitors will come?** A 12-month Machine Learning forecast with a confidence interval, plus conditional forecasts by scenario up to 2030, calibrated on the destination's own history.
 - **When does capacity saturate?** Demand against the current visitor cap, month by month.
 - **What does a crisis cost?** Visitors lost to disasters, a pandemic or protests, and how long recovery takes.
 - **What if…?** The visitor cap changes, demand grows or falls, a crisis repeats, or access management gets worse.
@@ -81,7 +81,9 @@ Four models are compared against a demanding baseline: **Seasonal Naïve**, whic
 | Gradient Boosting | 14.02% | 24.30% |
 | Multiple linear regression | 14.55% | 19.63% |
 
-Random Forest cuts the baseline's error in normal months by 9%.
+MAPE: mean absolute percentage error of the predictions (lower is better). Normal months: months without disruptive events, which are the ones a model can anticipate.
+
+Random Forest cuts the baseline's error in normal months by ≈ 9.5%.
 
 ![Error by test year](assets/mp_08_backtesting.png)
 
@@ -173,7 +175,7 @@ Python (pandas, scikit-learn, statsmodels) · Power BI · Streamlit
 - **Climate:** NASA POWER (MERRA-2).
 - **Salar de Uyuni:** the author's primary data.
 
-> A demonstration case built with public data. It is not an official forecast and does not represent the position of any institution.
+> Demonstration cases built with public data (Machu Picchu) and the author's primary data (Salar de Uyuni). They are not official forecasts and do not represent the position of any institution.
 
 ## References
 
@@ -183,3 +185,6 @@ Python (pandas, scikit-learn, statsmodels) · Power BI · Streamlit
 ## Author
 
 **Víctor Hugo Villegas Ríos**, freelance data analytics and data science consultant.
+
+- LinkedIn: https://www.linkedin.com/in/victorhugovillegasrios/
+- GitHub: https://github.com/VictorHugoVillegasRios

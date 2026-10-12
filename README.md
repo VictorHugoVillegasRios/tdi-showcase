@@ -12,7 +12,7 @@
 
 TDI responde las preguntas que se hace a diario quien gestiona un destino turístico:
 
-- **¿Cuántos visitantes vendrán en los próximos 12 meses?** Pronóstico mensual con intervalo de confianza.
+- **¿Cuántos visitantes vendrán?** Pronóstico de Machine Learning a 12 meses con intervalo de confianza, y pronósticos condicionales por escenario hasta 2030, calibrados con la historia del propio destino.
 - **¿Cuándo se satura la capacidad?** Demanda frente al aforo vigente, mes a mes.
 - **¿Cuánto cuesta una crisis?** Visitantes perdidos en desastres, pandemia o protestas, y cuánto tarda la recuperación.
 - **¿Qué pasa si…?** Cambia el aforo, crece o cae la demanda, se repite una crisis o empeora la gestión del acceso.
@@ -79,7 +79,9 @@ Se comparan cuatro modelos contra un baseline exigente: **Seasonal Naïve**, que
 | Gradient Boosting | 14,02 % | 24,30 % |
 | Regresión lineal múltiple | 14,55 % | 19,63 % |
 
-Random Forest reduce un 9 % el error del baseline en meses normales.
+MAPE: error porcentual medio de las predicciones (menor es mejor). Meses normales: meses sin eventos disruptivos, que son los que un modelo puede anticipar.
+
+Random Forest reduce ≈ 9,5 % el error del baseline en meses normales.
 
 ![Error por año de prueba](assets/mp_08_backtesting.png)
 
@@ -171,7 +173,7 @@ Python (pandas, scikit-learn, statsmodels) · Power BI · Streamlit
 - **Clima:** NASA POWER (MERRA-2).
 - **Salar de Uyuni:** datos primarios del autor.
 
-> Caso demostrativo construido con datos públicos. No es un pronóstico oficial ni representa la posición de ninguna institución.
+> Casos demostrativos construidos con datos públicos (Machu Picchu) y datos primarios del autor (Salar de Uyuni). No son pronósticos oficiales ni representan la posición de ninguna institución.
 
 ## Referencias
 
@@ -181,3 +183,6 @@ Python (pandas, scikit-learn, statsmodels) · Power BI · Streamlit
 ## Autor
 
 **Víctor Hugo Villegas Ríos**, consultor freelance en análisis y ciencia de datos.
+
+- LinkedIn: https://www.linkedin.com/in/victorhugovillegasrios/
+- GitHub: https://github.com/VictorHugoVillegasRios
