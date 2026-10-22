@@ -24,7 +24,7 @@ flowchart LR
     F["Fuentes del destino<br/>(reportes oficiales, clima,<br/>datos primarios)"] --> A["Adaptadores<br/>(uno por proyecto)"]
     A --> E["Estándar TDI<br/>TDI_Destino · TDI_Serie<br/>Catálogo de variables"]
     E --> M["Motor TDI<br/>EDA · Machine Learning · Escenarios"]
-    M --> P["Dashboard Power BI<br/>(en desarrollo)"]
+    M --> P["Dashboard Power BI<br/>(v1.0)"]
     M --> S["Simulador web<br/>(en desarrollo)"]
 ```
 
@@ -149,22 +149,139 @@ Pronóstico a 12 meses con intervalo del 90 %, y contrafactual: cuántos visitan
 - **Trazabilidad:** cada evento codificado y cada tramo de aforo registra su fuente y si está verificado.
 - **Reproducibilidad:** los datos del estándar se regeneran desde las fuentes originales con un solo comando, sin pasos manuales.
 
+## Dashboard Power BI
+
+El motor alimenta un informe Power BI de cinco páginas. Es un solo informe para cualquier destino: el selector de Destino adapta tarjetas, gráficos y textos a los datos disponibles. Lo que un destino no permite calcular se muestra como hueco o como análisis omitido con su motivo; nunca se rellena.
+
+![Navegación por el dashboard](assets/dashboard/tdi_navegacion.gif)
+
+### Recorrido: Machu Picchu
+
+**Resumen. ¿Cómo está el destino hoy?** Visitantes de los últimos 12 meses, pronóstico, uso de capacidad, error del modelo y estacionalidad.
+
+![Resumen](assets/dashboard/01_resumen_mp-ci.png)
+
+**Pronóstico. ¿Qué viene y cuánto confiar en ello?** Pronóstico a 12 meses con banda del 90 %, precisión por modelo y prueba ciega. La prueba ciega se muestra aunque el modelo pierda: en Machu Picchu el baseline estacional (8,3 % de error) superó a Random Forest (16,4 %).
+
+![Pronóstico](assets/dashboard/02_pronostico_mp-ci.png)
+
+**Eventos. ¿Cuánto costaron las disrupciones?** Serie completa con los periodos de evento y los meses sin dato, visitantes perdidos por evento y comparación real frente a sin evento.
+
+![Eventos](assets/dashboard/03_eventos_mp-ci.png)
+
+**Escenarios. ¿Qué pasa hacia 2030?** Trayectorias por escenario, demanda frente a capacidad y primer año en que la capacidad limita.
+
+![Escenarios](assets/dashboard/04_escenarios_mp-ci.png)
+
+**Calidad de datos. ¿Qué permite el dato y qué no?** Módulos y variables con su estado, cobertura y fuente, y los análisis omitidos o parciales con su motivo.
+
+![Calidad de datos](assets/dashboard/05_calidad_mp-ci.png)
+
+### El mismo informe, otro destino: Salar de Uyuni
+
+El Salar tiene datos en el 58 % de los meses y sin aforo conocido. El informe no cambia, pero se adapta: la tercera tarjeta de Escenarios pasa de demanda no atendida a ingresos y empleos-mes, y Calidad de datos explica por qué solo 10 de 18 análisis pudieron ejecutarse.
+
+![Escenarios: Salar de Uyuni](assets/dashboard/04_escenarios_su-01.png)
+
+![Calidad de datos: Salar de Uyuni](assets/dashboard/05_calidad_su-01.png)
+
+### Cómo está construido
+
+```mermaid
+flowchart LR
+  subgraph D["Diseño"]
+    F["Figma · TDI Design System"] --> T["Tokens y fondos PNG<br/>generados por código"] --> TH["Tema Power BI"]
+  end
+  subgraph Datos
+    M["Motor Python"] --> X["13 tablas"] --> SM["Modelo semántico<br/>PBIP · TMDL"] --> R["Informe PBIR<br/>5 páginas"]
+  end
+  TH --> R
+  CC["Claude Code<br/>asistente de desarrollo"] -.-> SM
+  CC -.-> R
+  G["Git + pruebas automáticas"] -.-> SM
+  G -.-> R
+```
+
+Todo el informe vive como texto versionado: modelo, medidas, páginas y botones. El diseño se hace en Figma y se traduce a fondos generados por código y a un tema de Power BI. El modelo y las páginas se desarrollan con Claude Code como asistente, bajo convenciones escritas, y cada cambio se verifica con pruebas automáticas que cubren la estructura del informe, la navegación, las interacciones y la regresión del motor.
+
+### Convenciones
+
+- **No se inventan datos.** Los huecos se ven y lo que no se puede calcular aparece como omitido, con su motivo.
+- **Un solo control filtra.** El selector de Destino; los visuales no se filtran entre sí.
+- **Textos que se escriben solos.** Tarjetas y lecturas se generan con medidas y cambian con el destino.
+
+### Muestra de DAX
+
+**Valor tercera tarjeta Escenarios**: la tercera tarjeta de Escenarios muestra la demanda no atendida en destinos con capacidad conocida, o los ingresos del escenario Base en destinos con datos económicos.
+
+```dax
+IF (
+    [_Destino único],
+        SWITCH (
+            TRUE (),
+            SELECTEDVALUE ( Dim_Destino[Tiene_Capacidad] ) = "Sí", FORMAT ( [No atendida por aforo al horizonte · Optimista], "#,0", "en-US" ),
+            SELECTEDVALUE ( Dim_Destino[Tiene_Economia] ) = "Sí",
+                VAR _i = [Ingresos al horizonte · Base]
+                RETURN
+                    IF ( ISBLANK ( _i ), "Sin datos", "$" & FORMAT ( _i / 1000000, "#,0.0", "en-US" ) & " M" ),
+            "Sin datos"
+        ),
+    BLANK ()
+)
+```
+
+**Cobertura módulo o variable**: en una variable muestra su cobertura; en un módulo, cuántas variables tienen datos; si el módulo es parcial por tiempo, añade la cobertura en meses de su variable más baja.
+
+```dax
+SWITCH (
+    TRUE (),
+    ISINSCOPE ( Fact_Variables[Variable] ),
+        VAR _c = SELECTEDVALUE ( Fact_Variables[Cobertura_pct] )
+        RETURN
+            IF (
+                ISBLANK ( _c ),
+                BLANK (),
+                FORMAT ( _c / 100, "0.0%", "en-US" ) & IF ( SELECTEDVALUE ( Fact_Variables[Cobertura_Origen] ) = "Declarada", " *", "" )
+            ),
+    ISINSCOPE ( Fact_Variables[Modulo] ),
+        VAR _m = CALCULATETABLE ( Fact_Modulos, TREATAS ( VALUES ( Fact_Variables[Modulo] ), Fact_Modulos[Modulo] ) )
+        VAR _con = SUMX ( _m, Fact_Modulos[Variables_con_datos] )
+        VAR _tot = SUMX ( _m, Fact_Modulos[Variables_totales] )
+        VAR _estado = MAXX ( _m, Fact_Modulos[Estado] )
+        -- parcial con todas sus variables: lo limita la cobertura temporal (variable con menos meses, ventana del target)
+        VAR _meses = MIN ( Fact_Variables[Cobertura_pct] )
+        RETURN
+            IF (
+                ISBLANK ( _tot ),
+                BLANK (),
+                FORMAT ( _con, "0", "en-US" ) & " de " & FORMAT ( _tot, "0", "en-US" ) & IF ( _tot = 1, " variable", " variables" )
+                    & IF ( _estado = "Parcial" && _con = _tot, " · " & FORMAT ( _meses / 100, "0%", "en-US" ) & " de meses", "" )
+            )
+)
+```
+
+### Limitaciones conocidas
+
+Detalles de pulido documentados y fuera de la v1.0: líneas que unen huecos en series con meses sin dato, una leyenda de capacidad visible en destinos sin aforo, etiquetas inclinadas en Estacionalidad y una redacción de cobertura de aforo.
+
+> El archivo del informe no se publica en este repositorio. Demostración disponible bajo solicitud.
+
 ## Productos
 
 | Producto | Estado |
 |---|---|
 | Motor analítico (EDA, ML, escenarios) | ✔ v0.4 |
-| Dashboard Power BI | En desarrollo |
+| Dashboard Power BI | ✔ [v1.0](#dashboard-power-bi) |
 | Simulador web de escenarios | En desarrollo |
 
 ## Stack
 
-Python (pandas, scikit-learn, statsmodels) · Power BI · Streamlit
+Python (pandas, scikit-learn, statsmodels) · Power BI (PBIP · TMDL · PBIR), DAX · Streamlit
 
 ## Hoja de ruta
 
 - ✔ **v0.4:** motor genérico, capa de adaptación y pruebas automatizadas
-- ◻ Dashboard Power BI
+- ✔ Dashboard Power BI (v1.0)
 - ◻ Simulador web
 
 ## Fuentes de datos
